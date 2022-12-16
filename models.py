@@ -7,14 +7,6 @@ from sqlalchemy.orm import Mapped, relationship
 Base = declarative_base()
 
 
-association_table = Table(
-    "association_table",
-    Base.metadata,
-    Column("left_id", ForeignKey("profiles.id"), primary_key=True),
-    Column("right_id", ForeignKey("profiles.id"), primary_key=True),
-)
-
-
 class User(Base):
     __tablename__ = "users"
 
@@ -29,8 +21,6 @@ class UserProfile(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
 
-    follows = relationship("UserProfile", secondary=association_table)
-
 
 class Dweet(Base):
     __tablename__ = "dweets"
@@ -40,3 +30,14 @@ class Dweet(Base):
     created_at = Column(DateTime, default=datetime.now())
 
     user_id = Column(Integer, ForeignKey("users.id"))
+
+
+class Follow(Base):
+    __tablename__ = 'followers'
+
+    id = Column(Integer, primary_key=True, index=True)
+    following_id = Column(Integer, ForeignKey("profiles.id", ondelete='CASCADE'))
+    follower_id = Column(Integer, ForeignKey("profiles.id", ondelete='CASCADE'))
+
+    following = relationship("UserProfile", backref='following', foreign_keys=[following_id])
+    followers = relationship("UserProfile", backref='followers', foreign_keys=[follower_id])

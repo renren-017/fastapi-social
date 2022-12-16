@@ -1,85 +1,82 @@
 import uvicorn
-from fastapi import FastAPI, Depends, Form
 import os
-from fastapi_sqlalchemy import DBSessionMiddleware
-from fastapi_sqlalchemy import db
-
+import jwt_handler
 import models
 import schema
+from fastapi import FastAPI, Depends
+from sqlalchemy.orm import Session
+from database import get_db
 from models import User, Dweet, UserProfile
 from schema import UserSchema, TokenSchema
 from dotenv import load_dotenv
-from fastapi.security import OAuth2PasswordRequestForm
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 app = FastAPI()
-app.add_middleware(DBSessionMiddleware, db_url=os.environ["DATABASE_URL"])
 
 
-@app.post("/register/", response_model=UserSchema)
-def create_user(user: UserSchema):
+@app.post("/register/", response_model=UserSchema, tags=["auth"])
+def create_user(user: UserSchema, db: Session = Depends(get_db)):
     db_user = User(
         username=user.username, password=user.password,
     )
-    db.session.add(db_user)
-    db.session.commit()
+    db.add(db_user)
+    db.commit()
 
     db_profile = UserProfile(
         user_id=db_user.id,
     )
-    db.session.add(db_profile)
-    db.session.commit()
+    db.add(db_profile)
+    db.commit()
     return db_user
 
 
-@app.post("/token-obtain/", response_model=TokenSchema)
-def token_obtain(user: UserSchema):
-    # userd = User(
-    #     username=user.username, password=user.password,
-    # )
-    u = db.session.query(models.User).filter(models.User.username == user.username).first()
+@app.post("/token-obtain/", response_model=TokenSchema, tags=["auth"])
+def token_obtain(user: UserSchema, db: Session = Depends(get_db)):
+    u = db.query(models.User).filter(models.User.username == user.username).first()
     if u is not None:
         return {
-            "access": schema.create_access_token(u.id),
-            "refresh": schema.create_refresh_token(u.id)
+            "access": jwt_handler.encode_token(u.id, exp=os.environ["ACCESS_TOKEN_EXP"]),
+            "refresh": jwt_handler.encode_token(u.id, exp=os.environ['REFRESH_TOKEN_EXP'])
         }
     return {'Fail': 'BOOOO'}
 
 
-@app.get("/dashboard/", response_model=schema.DweetSchema)
-def get_dweets(user: User = Depends(schema.get_current_user)):
-    dweets = db.session.query(models.Dweet).all()
+@app.get("/dashboard/", response_model=schema.DweetSchema, tags=["dweets"])
+def get_dweets(db: Session = Depends(get_db)):
+    dweets = db.query(models.Dweet).all()
     return dweets
 
 
-@app.post("/dashboard/", response_model=schema.DweetSchema)
-def post_dweets(user: User = Depends(schema.get_current_user), body: str = "No content"):
+@app.post("/dashboard/", response_model=schema.DweetSchema, dependencies=[Depends(jwt_handler.JWTBearer())],
+          tags=["dweets"])
+def post_dweets(body: str = "No content",
+                db: Session = Depends(get_db),
+                user: User = Depends(jwt_handler.get_request_user)):
     db_dweet = Dweet(
         user_id=user.id, body=body
     )
-    db.session.add(db_dweet)
-    db.session.commit()
+    db.add(db_dweet)
+    db.commit()
 
 
-@app.get("/profile_list/", response_model=schema.ProfileSchema)
-def get_profile_list(user: User = Depends(schema.get_current_user)):
-    profiles = db.session.query(models.UserProfile).all()
+@app.get("/profile_list/", response_model=schema.ProfileSchema, tags=["profiles"])
+def get_profile_list(db: Session = Depends(get_db)):
+    profiles = db.query(models.UserProfile).all()
     return profiles
 
 
-@app.get("/profile/{pk}", response_model=schema.ProfileSchema)
-def get_profile_details(user: User = Depends(schema.get_current_user), pk: int = None):
-    profile = db.session.query(models.UserProfile).get(pk=pk)
+@app.get("/profile/{pk}", response_model=schema.ProfileSchema, tags=["profiles"])
+def get_profile_details(pk: int = None, db: Session = Depends(get_db)):
+    profile = db.query(models.UserProfile).get(id=pk)
     return profile
 
 
-@app.post("/profile/{pk}", response_model=schema.ProfileSchema)
-def follow_profile(user: User = Depends(schema.get_current_user), pk: int = None):
-    profile = db.session.query(models.UserProfile).get(pk=pk)
+@app.post("/profile/{pk}", response_model=schema.ProfileSchema, tags=["profiles"])
+def follow_profile(pk: int = None, db: Session = Depends(get_db)):
+    profile = db.query(models.UserProfile).get(id=pk)
     return profile
-
 
 
 if __name__ == "__main__":
