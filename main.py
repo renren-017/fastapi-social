@@ -3,11 +3,12 @@ import os
 import jwt_handler
 import models
 import schema
+from app import schema, models, jwt_handler
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
-from database import get_db
-from models import User, Dweet, UserProfile
-from schema import UserSchema, TokenSchema
+from app.database import get_db, add_to_db
+from app.models import User, Dweet, UserProfile
+from app.schema import UserSchema, TokenSchema
 from dotenv import load_dotenv
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -21,14 +22,10 @@ def create_user(user: UserSchema, db: Session = Depends(get_db)):
     db_user = User(
         username=user.username, password=user.password,
     )
-    db.add(db_user)
-    db.commit()
-
     db_profile = UserProfile(
         user_id=db_user.id,
     )
-    db.add(db_profile)
-    db.commit()
+    add_to_db(db, db_user, db_profile)
     return db_user
 
 
