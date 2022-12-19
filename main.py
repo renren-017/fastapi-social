@@ -3,14 +3,14 @@ import os
 import jwt_handler
 import models
 import schema
-from app import schema, models, jwt_handler
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
+
 from app.database import get_db, add_to_db
 from app.models import User, Dweet, UserProfile
 from app.schema import UserSchema, TokenSchema
-from dotenv import load_dotenv
 
+from dotenv import load_dotenv
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 

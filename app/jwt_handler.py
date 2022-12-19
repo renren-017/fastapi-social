@@ -74,6 +74,6 @@ def get_request_user(token: HTTPAuthorizationCredentials = Depends(HTTPBearer())
     if user is None:
         raise HTTPException(
             status_code=404,
-            detail='Пользователь не найден'
+            detail='User not found'
         )
     return user
