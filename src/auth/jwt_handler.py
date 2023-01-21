@@ -1,14 +1,14 @@
-from decouple import config, AutoConfig
+from decouple import AutoConfig
 from datetime import datetime, timedelta
 from typing import Union, Any
 from jose import jwt
-from fastapi import Request, HTTPException, Depends
+from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-from app.database import get_db
-from app.models import User
+from database import get_db
+from .models import User
 
 config = AutoConfig(search_path='/fastapi-social')
 
