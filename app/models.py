@@ -4,7 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, ForeignKey, Table, Text, DateTime
 from sqlalchemy.orm import Mapped, relationship
 
-Base = declarative_base()
+from app.database import Base
 
 
 class User(Base):
@@ -21,6 +21,8 @@ class UserProfile(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
 
+    class Config:
+        orm_mode = True
 
 class Dweet(Base):
     __tablename__ = "dweets"
@@ -30,6 +32,9 @@ class Dweet(Base):
     created_at = Column(DateTime, default=datetime.now())
 
     user_id = Column(Integer, ForeignKey("users.id"))
+
+    class Config:
+        orm_mode = True
 
 
 class Follow(Base):

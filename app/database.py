@@ -1,15 +1,20 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-import os
+from sqlalchemy.orm import sessionmaker, Session
+from fastapi import Depends
 from dotenv import load_dotenv
+from decouple import AutoConfig, RepositoryEnv
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-load_dotenv(os.path.join(BASE_DIR, ".env"))
-
-
+config = AutoConfig(search_path='/fastapi-social')
+database_url = 'postgresql://{}:{}@{}:{}/{}'.format(
+        config('POSTGRES_USER'),
+        config('POSTGRES_PASSWORD'),
+        config('POSTGRES_HOST'),
+        config('POSTGRES_PORT'),
+        config('POSTGRES_DB')
+    )
 engine = create_engine(
-    os.environ['DATABASE_URL']
+    database_url
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -19,7 +24,6 @@ Base = declarative_base()
 def get_db():
     db = SessionLocal()
     try:
-        print(type(db))
         yield db
     finally:
         db.close()
