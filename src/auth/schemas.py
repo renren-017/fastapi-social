@@ -1,6 +1,8 @@
-from typing import Union
+import re
 
-from pydantic import BaseModel
+from typing import Union
+from fastapi import HTTPException
+from pydantic import BaseModel, validator
 
 
 class TokenSchema(BaseModel):
@@ -18,3 +20,14 @@ class UserSchema(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class UserCreateSchema(UserSchema):
+    @validator('password')
+    def password_validation(cls, value):
+        if not re.search(r"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$", value):
+            raise HTTPException(
+                status_code=422,
+                detail="Password must at least 8 characters long "
+                       "and contain at least one letter and and one number.")
+        return value

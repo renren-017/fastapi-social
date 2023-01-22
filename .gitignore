@@ -5,3 +5,4 @@ docker-compose.yml
 alembic/env.py
 __pycache__/
 .idea/
+.pytest_cache/
